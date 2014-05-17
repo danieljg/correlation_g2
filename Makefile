@@ -30,7 +30,7 @@ coherence: $(COHERENCE_DEPENDENCIES)
 	$(FC) $(FCFLAGS) $(COHERENCE_DEPENDENCIES) -o coherence -r8 -O2 -xHost $(MKL_VSL_FLAGS)
 
 coherence.o: source/simulation_driver.f90
-	$(FC) $(FCFLAGS) source/simulation_driver.f90 -c -r8 -O1 -xHost $(MKL_VSL_FLAGS)
+	$(FC) $(FCFLAGS) source/simulation_driver.f90 -c -r8 -O2 -xHost $(MKL_VSL_FLAGS)
 #rangen: source/rangen.f90
 #	$(FC) $(FCFLAGS) source/rangen.f90 -o rangen -r8 -O2 $(MKL_VSL_FLAGS) #-g #$(ANNOTATE_FLAGS)
 
