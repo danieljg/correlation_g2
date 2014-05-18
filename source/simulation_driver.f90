@@ -1,9 +1,9 @@
 module vars_and_funcs
  integer, parameter :: nn = 1e7
  real,    parameter ::                                                         &
-   min_temp               = 42.0,                                              &
-   max_temp               = 55.0,                                              &
-   temp_step              = 0.5,                                              &
+   min_temp               = 40.0,                                              &
+   max_temp               = 60.0,                                              &
+   temp_step              = 0.1,                                              &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
@@ -12,7 +12,7 @@ module vars_and_funcs
    high_wavelength_limit  = 820.0e-9,                                          &
    beam_waist             = 60.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
    spectral_width_nm      = 0.015e-9,                  &!!!!GET THESE NUMBERS RIGHT
-   crystal_length         = 0.001,                                             &
+   crystal_length         = 0.005,                                             &
    d_eff                  = 1.0,                       &!!!!GET THESE NUMBERS RIGHT
    pi                     = 4.0*atan(1.0),                                     &
    c                      = 3.0e8
