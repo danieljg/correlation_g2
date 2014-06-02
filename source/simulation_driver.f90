@@ -1,9 +1,9 @@
 module vars_and_funcs
- integer, parameter :: nn = 5e6
+ integer, parameter :: nn = 1e5
  real,    parameter ::                                                         &
-   min_temp               = 30.0,                                              &
-   max_temp               = 70.0,                                              &
-   temp_step              = 0.25,                                              &
+   min_temp               = 40.0,                                              &
+   max_temp               = 60.0,                                              &
+   temp_step              = 1.00,                                              &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
@@ -117,8 +117,8 @@ contains
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
    write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] position[mm] {idler_position[mm]}'
    write(*,*)'[defaults]./coherence 5.0 5.0 21.0 21.0'
-   signal_aperture = 0.005
-   idler_aperture  = 0.005
+   signal_aperture = 0.001
+   idler_aperture  = 0.001
    signal_position = 0.021
    idler_position  = 0.021
   elseif(command_argument_count().eq.3)then
