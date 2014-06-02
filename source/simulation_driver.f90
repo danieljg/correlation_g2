@@ -1,9 +1,9 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e7
+ integer, parameter :: nn = 5e6
  real,    parameter ::                                                         &
-   min_temp               = 40.0,                                              &
-   max_temp               = 60.0,                                              &
-   temp_step              = 0.1,                                              &
+   min_temp               = 30.0,                                              &
+   max_temp               = 70.0,                                              &
+   temp_step              = 0.25,                                              &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
@@ -17,8 +17,8 @@ module vars_and_funcs
    pi                     = 4.0*atan(1.0),                                     &
    c                      = 3.0e8
  real, parameter :: omega_pump     = 2.0*pi*c/pump_wavelength,                 &
-                  spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
- real :: poling_period
+                    spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
+ real :: poling_period, k_spectral_width
  contains
 real function ktp_index(x,temp)
 real :: x, temp
@@ -65,6 +65,7 @@ implicit none
    number_of_temps = 1+ceiling(abs(max_temp-min_temp)/temp_step)
  real :: k_a, k_b, signal_gamma, idler_gamma,                                  &
          signal_aperture_angle, idler_aperture_angle
+ real :: signal_aperture, idler_aperture, signal_position, idler_position
  real, dimension(nn) :: signal_k, signal_polar, signal_azimuth,                &
                         idler_k,  idler_polar,  idler_azimuth,                 &
                         signal_kx, signal_ky, signal_kz,                       &
@@ -75,11 +76,13 @@ implicit none
  integer(kind=4) :: i = 1
  real    :: temp = min_temp
 
- call read_and_set_parameters()
+ call read_parameters()
  call initialize_stream()
 
  do i = 1, number_of_temps
  write(*,*) 'temp ', i, ' of ',number_of_temps
+
+ call set_variables()
 
  call determine_k_limits_and_hypervolume(k_a, k_b, k_hypervolume(i))
 
@@ -107,16 +110,15 @@ implicit none
 
 contains
 
- subroutine read_and_set_parameters()
+ subroutine read_parameters()
  implicit none
- real :: signal_aperture, idler_aperture, signal_position, idler_position
  character(len=30) :: value
   if(command_argument_count().eq.0)then
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
    write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] position[mm] {idler_position[mm]}'
-   write(*,*)'[defaults]./coherence 2.5 1.0 21.0 22.0'
-   signal_aperture = 0.0001
-   idler_aperture  = 0.0001
+   write(*,*)'[defaults]./coherence 5.0 5.0 21.0 21.0'
+   signal_aperture = 0.005
+   idler_aperture  = 0.005
    signal_position = 0.021
    idler_position  = 0.021
   elseif(command_argument_count().eq.3)then
@@ -140,24 +142,24 @@ contains
    write(*,*) 'wrong number of arguments, try no arguments to see some instructions'
    stop
   endif
+  poling_period = pump_wavelength/(ktp_index(pump_wavelength,axial_pm_temp)    &
+                                  -ktp_index(2.0*pump_wavelength,axial_pm_temp))
+write(*,*)'poling_period',poling_period
+ end subroutine read_parameters
+
+ subroutine set_variables()
+ implicit none
   signal_aperture_angle = &
-   2.0*tan(signal_aperture/(2.0*sqrt(crystal_dist**2+signal_position**2)))     &
+   tan(0.5*signal_aperture/sqrt(crystal_dist**2+signal_position**2))           &
     /ktp_index(pump_wavelength*2.0,temp)
   idler_aperture_angle  = &
-   2.0*tan(idler_aperture/(2.0*sqrt(crystal_dist**2+idler_position**2)))       &
+   tan(0.5*idler_aperture/sqrt(crystal_dist**2+idler_position**2))             &
     /ktp_index(pump_wavelength*2.0,temp)
   signal_gamma  = abs(tan(signal_position/crystal_dist)                        &
                       /ktp_index(pump_wavelength*2.0,temp))
   idler_gamma   =-abs(tan(idler_position/crystal_dist)                         &
                       /ktp_index(pump_wavelength*2.0,temp))
-  poling_period = pump_wavelength/(ktp_index(pump_wavelength,axial_pm_temp)    &
-                                  -ktp_index(2.0*pump_wavelength,axial_pm_temp))
-write(*,*)'ktp_index(2.0*pump_wavelength,axial_pm_temp)',ktp_index(2.0*pump_wavelength,axial_pm_temp)
-write(*,*)'signal_gamma',signal_gamma
-write(*,*)'idler_gamma',idler_gamma
-write(*,*)'2*pump_wavelength',2*pump_wavelength,'axial_pm_temp',axial_pm_temp
-write(*,*)'poling_period',poling_period
- end subroutine read_and_set_parameters
+ end subroutine set_variables
 
  subroutine determine_k_limits_and_hypervolume(k_low,k_high,hypervolume)!!!seems ok
  implicit none

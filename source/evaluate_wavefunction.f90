@@ -7,25 +7,21 @@ implicit none
                      idler_k(nn),  idler_kx(nn),  idler_ky(nn),  idler_kz(nn), &
                      temp, k_a, k_b
  real, intent(out) :: wavefunction(nn)
- real :: delta_kz(nn), delta_ksq(nn), omega_sum(nn),sinc_vec(nn)
+ real :: delta_kz(nn), delta_ksq(nn), sinc_vec(nn)
  integer i
+ k_spectral_width = 0.5*(k_p(omega_pump+spectral_width)-k_p(omega_pump-spectral_width))
  delta_ksq(:) = (signal_kx(:) + idler_kx(:))**2.0                              &
               + (signal_ky(:) + idler_ky(:))**2.0
  do i=1,nn
   delta_kz(i) = k_p(omega(signal_k(i)) + omega(idler_k(i)))                    &
               - signal_kz(i) - idler_kz(i) - 2.0*pi/poling_period
-  omega_sum(i) = omega(signal_k(i))+omega(idler_k(i))
-  sinc_vec(i)   = (sinc(crystal_length*delta_kz(i)/(2.0*pi)))**2
+  sinc_vec(i)   = (sinc(0.5*crystal_length*delta_kz(i)))**2
  end do
  wavefunction(:) = d_eff**2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)  &
                    *exp( -(beam_waist**2*delta_ksq(:)/2.0) )                   &!seems ok
-                   *exp( -2.0*(omega_sum(:)-omega_pump)**2          &!omega_sum seems to be low...
-                          /spectral_width**2 )                                 &
+                   *exp( -2.0*(signal_k(:)+idler_k(:)-k_p(omega_pump))**2      &
+                          /k_spectral_width**2 )                               &
                    *sinc_vec(:)
-
-!write(*,*) 'delta_kz(1),sinc_vec(1)'
-!write(*,*) delta_kz(1),sinc_vec(1)
-!pause
  contains
  real function omega(k_len)
  real :: k_len, y_left, y_right, lambda_left, lambda_right
@@ -58,6 +54,6 @@ implicit none
  real function sinc(x)
  real x
  real, parameter :: tn=tiny(x)
- sinc=sin(pi*x+tn)/(pi*x+tn)
+ sinc=sin(x+tn)/(x+tn)
  end function sinc
 end subroutine evaluate_wavefunction
