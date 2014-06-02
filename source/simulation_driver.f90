@@ -18,7 +18,7 @@ module vars_and_funcs
    c                      = 3.0e8
  real, parameter :: omega_pump     = 2.0*pi*c/pump_wavelength,                 &
                     spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
- real :: poling_period, k_spectral_width
+ real :: poling_period
  contains
 real function ktp_index(x,temp)
 real :: x, temp

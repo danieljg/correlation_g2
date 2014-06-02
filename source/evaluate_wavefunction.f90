@@ -7,20 +7,20 @@ implicit none
                      idler_k(nn),  idler_kx(nn),  idler_ky(nn),  idler_kz(nn), &
                      temp, k_a, k_b
  real, intent(out) :: wavefunction(nn)
- real :: delta_kz(nn), delta_ksq(nn), sinc_vec(nn)
+ real :: delta_kz(nn), delta_ksq(nn), sinc_vec(nn), omega_sum(nn)
  integer i
- k_spectral_width = 0.5*(k_p(omega_pump+spectral_width)-k_p(omega_pump-spectral_width))
  delta_ksq(:) = (signal_kx(:) + idler_kx(:))**2.0                              &
               + (signal_ky(:) + idler_ky(:))**2.0
  do i=1,nn
   delta_kz(i) = k_p(omega(signal_k(i)) + omega(idler_k(i)))                    &
               - signal_kz(i) - idler_kz(i) - 2.0*pi/poling_period
-  sinc_vec(i)   = (sinc(0.5*crystal_length*delta_kz(i)))**2
+  omega_sum(i) = omega(signal_k(i))+omega(idler_k(i))
+  sinc_vec(i)  = (sinc(0.5*crystal_length*delta_kz(i)))**2
  end do
  wavefunction(:) = d_eff**2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)  &
                    *exp( -(beam_waist**2*delta_ksq(:)/2.0) )                   &!seems ok
-                   *exp( -2.0*(signal_k(:)+idler_k(:)-k_p(omega_pump))**2      &
-                          /k_spectral_width**2 )                               &
+                   *exp( -2.0*(omega_sum(:)-omega_pump)**2                     &
+                          /spectral_width**2 )                                 &
                    *sinc_vec(:)
  contains
  real function omega(k_len)
