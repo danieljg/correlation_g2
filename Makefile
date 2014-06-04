@@ -16,21 +16,24 @@ ADV_DIR = $(ADVISOR_XE_2013_DIR)
 ANNOTATE_FLAGS = -I $(ADV_DIR)/include/$(Arch) -L$(ADV_DIR)/$(libdir) -ladvisor -ldl
 MKL_VSL_FLAGS = -I$(MKLROOT)/include -i8 -L$(MKLROOT)/lib/intel64 -lmkl_intel_ilp64 -lmkl_core -lmkl_sequential -lpthread -lm
 
-COHERENCE_DEPENDENCIES = source/simulation_driver.f90 source/generate_random_photons.f90 source/rotate_to_aperture_angle.f90 source/evaluate_wavefunction.f90
+COHERENCE_DEPENDENCIES = source/generate_random_photons.f90 source/rotate_to_aperture_angle.f90 source/evaluate_wavefunction.f90
 
 all: build
 release: build
 debug: build_debug
 
-build: coherence
+build: coherence_temp coherence_angle
 build_debug: rangen_debug
 
 
-coherence: $(COHERENCE_DEPENDENCIES)
-	$(FC) $(FCFLAGS) $(COHERENCE_DEPENDENCIES) -o coherence -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
+coherence_temp: source/simulation_driver_temp.f90 $(COHERENCE_DEPENDENCIES)
+	$(FC) $(FCFLAGS) source/simulation_driver_temp.f90 $(COHERENCE_DEPENDENCIES) -o coherence_temp -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
 
-coherence.o: source/simulation_driver.f90
-	$(FC) $(FCFLAGS) source/simulation_driver.f90 -c -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
+coherence_angle: source/simulation_driver_angle.f90 $(COHERENCE_DEPENDENCIES)
+	$(FC) $(FCFLAGS) source/simulation_driver_angle.f90 $(COHERENCE_DEPENDENCIES) -o coherence_angle -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
+
+coherence.o: source/simulation_driver_temp.f90
+	$(FC) $(FCFLAGS) source/simulation_driver_temp.f90 -c -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
 #rangen: source/rangen.f90
 #	$(FC) $(FCFLAGS) source/rangen.f90 -o rangen -r8 -O2 $(MKL_VSL_FLAGS) #-g #$(ANNOTATE_FLAGS)
 
@@ -42,7 +45,7 @@ coherence.o: source/simulation_driver.f90
 #1_nqueens_serial_debug: nqueens_serial.f90
 #	$(FC) $(FCFLAGS) nqueens_serial.f90 -o 1_nqueens_serial_debug -O0 -g -D_DEBUG #$(ANNOTATE_FLAGS)
 
-EXECUTABLES =  coherence
+EXECUTABLES =  coherence_temp coherence_angle
 
 clean::
 	rm -f $(EXECUTABLES) *.o
