@@ -1,10 +1,10 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e7,                                               &
+ integer, parameter :: nn = 1e5,                                               &
                        repetitions = 2
  real,    parameter ::                                                         &
    min_temp               = 35.0,                                              &
    max_temp               = 65.0,                                              &
-   temp_step              = 0.25,                                              &
+   temp_step              = 0.5,                                              &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
@@ -12,7 +12,7 @@ module vars_and_funcs
    low_wavelength_limit   = 805.0e-9,                                          &
    high_wavelength_limit  = 820.0e-9,                                          &
    beam_waist             = 60.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
-   spectral_width_nm      = 0.001e-9,                  &!!!!GET THESE NUMBERS RIGHT
+   spectral_width_nm      = 0.010e-9,                  &!!!!GET THESE NUMBERS RIGHT
    crystal_length         = 0.005,                                             &
    d_eff                  = 1.0,                       &!!!!GET THESE NUMBERS RIGHT
    pi                     = 4.0*atan(1.0),                                     &
@@ -128,11 +128,11 @@ contains
   if(command_argument_count().eq.0)then
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
    write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] position[mm] {idler_position[mm]}'
-   write(*,*)'[defaults]./coherence 5.0 5.0 21.0 21.0'
+   write(*,*)'[defaults]./coherence 1.0 1.0 20.5 20.5'
    signal_aperture = 0.001
    idler_aperture  = 0.001
-   signal_position = 0.021
-   idler_position  = 0.021
+   signal_position = 0.0205
+   idler_position  = 0.0205
   elseif(command_argument_count().eq.3)then
    call get_command_argument(1,value)
    read(value,*) signal_aperture; signal_aperture=signal_aperture/1e3
