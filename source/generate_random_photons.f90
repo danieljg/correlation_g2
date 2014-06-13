@@ -21,10 +21,11 @@ end subroutine
 end module vsl_stream
 
 subroutine generate_random_photons( k_lower_limit, k_upper_limit,              &
-                 aperture_half_angle, length_k, polar_angle, azimuth_angle, nn )
+         aperture_half_angle, length_k, polar_angle, azimuth_angle, nn, k_degen)
 use vsl_stream
 implicit none
- real, intent(in)          :: k_lower_limit, k_upper_limit, aperture_half_angle
+ real, intent(in)          :: k_lower_limit, k_upper_limit, k_degen,           &
+                              aperture_half_angle
  integer, intent(in)       :: nn
  real(kind=8), intent(out) :: length_k(nn), polar_angle(nn), azimuth_angle(nn)
  real(kind=8)    :: r(nn) !buffer for random numbers
@@ -43,5 +44,9 @@ implicit none
  r(:)=0.0; a = 0.0; b=1.0;
  errcode= vdrnguniform( method_uni, stream, n, r, a, b )
  polar_angle(:) = acos(1.0+r(:)*(cos(aperture_half_angle)-1.0))
+
+ !fix the first element to match the central wavelength and aperture center
+ polar_angle(1) = 0.0
+ length_k(1)    = k_degen
 
 end subroutine generate_random_photons
