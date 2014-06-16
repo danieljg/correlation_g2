@@ -1,6 +1,6 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e5,                                               &
-                       repetitions = 4
+ integer, parameter :: nn = 1e6,                                               &
+                       repetitions = 20
  real,    parameter ::                                                         &
    min_temp               = 40.0,                                              &
    max_temp               = 65.0,                                              &

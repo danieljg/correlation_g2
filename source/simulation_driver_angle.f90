@@ -1,6 +1,6 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e5,                                               &
-                       repetitions = 4
+ integer, parameter :: nn = 1e6,                                               &
+                       repetitions = 20
  real,    parameter ::                                                         &
    working_temp           = 51.5,                                              &
    idler_angle            = 2.3,                                               &
