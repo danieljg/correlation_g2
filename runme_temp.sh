@@ -1,8 +1,8 @@
 #!/bin/bash
 echo compiling
 make coherence_temp
-signal_apertures=(1 0.1 0.1 5)
-idler_apertures=(1 0.1 5 5)
+signal_apertures=(1 0.1 0.1 0.1 5)
+idler_apertures=( 1 0.1 3   5   5)
 echo running
 for ((k=0;k<=3;k++))
 do
