@@ -1,12 +1,13 @@
 subroutine evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,    &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
-                            wavefunction, temp, k_a, k_b,                      &
+                            wavefunction, temp, k_a_signal, k_b_signal,        &
+                            k_a_idler, k_b_idler,                              &
                             point_value, phase_mismatch )
 use vars_and_funcs
 implicit none
  real, intent(in) :: signal_k(nn), signal_kx(nn), signal_ky(nn), signal_kz(nn),&
                      idler_k(nn),  idler_kx(nn),  idler_ky(nn),  idler_kz(nn), &
-                     temp, k_a, k_b
+                     temp, k_a_signal, k_b_signal, k_a_idler, k_b_idler
  real, intent(out) :: wavefunction(nn), point_value, phase_mismatch
  real :: delta_ksq(nn), sinc_vec(nn), omega_sum(nn)
  integer i
@@ -41,8 +42,8 @@ implicit none
  real :: k_len, y_left, y_right, lambda_left, lambda_right
  real :: m, b, lambda_save, 	lambda_new
  integer i
- lambda_left  = low_wavelength_limit
- lambda_right = high_wavelength_limit
+ lambda_left  = min(low_wvln_signal, low_wvln_idler)
+ lambda_right = max(high_wvln_signal, high_wvln_idler)
  lambda_save  = lambda_left
  do i=1,16
   y_left  = ktp_index(lambda_left,temp)*2.0*pi/lambda_left - k_len
