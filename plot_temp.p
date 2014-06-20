@@ -7,7 +7,7 @@ set xlabel 'Temperature'
 set ylabel 'G_2'
 set xrange [xmin:xmax]
 
-set output 'coherence.eps'
+set output 'coherence_temp.eps'
 set title "Second order coherence function"
 plot 'coherence.dat' w lp pt 7 ps 0.5 lc 3
 

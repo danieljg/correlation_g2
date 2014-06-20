@@ -9,28 +9,26 @@ implicit none
                      idler_k(nn),  idler_kx(nn),  idler_ky(nn),  idler_kz(nn), &
                      temp, k_a_signal, k_b_signal, k_a_idler, k_b_idler
  real, intent(out) :: wavefunction(nn), point_value, phase_mismatch
- real :: delta_ksq(nn), sinc_vec(nn), omega_sum(nn)
+ real :: delta_ksq(nn), sinc_vec(nn), omega_sum(nn), pump_profile(nn)
  integer i
  ! build vectors for wavefunction evaluation
  delta_ksq(:) = (signal_kx(:) + idler_kx(:))**2.0                              &
               + (signal_ky(:) + idler_ky(:))**2.0
  do i=1,nn
-  omega_sum(i) = omega(signal_k(i))+omega(idler_k(i))
-  sinc_vec(i) = calc_phase_mismatch(omega_sum(i),signal_kz(i),idler_kz(i))
-  sinc_vec(i)  = (sinc(sinc_vec(i)))**2
+  omega_sum(i)    = omega(signal_k(i))+omega(idler_k(i))
+  sinc_vec(i)     = calc_phase_mismatch(omega_sum(i),signal_kz(i),idler_kz(i))
+  sinc_vec(i)     = (sinc(sinc_vec(i)))**2
+  pump_profile(i) = exp( -2.0*(omega_sum(i)-omega_pump)**2/spectral_width**2 )
  end do
  !asign point-value and phase-mismatch
  point_value = d_eff*2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)     &
                *exp( - (beam_waist**2*delta_ksq(1)/2.0) )                      &
-               *exp( -2.0*(omega_sum(1)-omega_pump)**2/spectral_width**2)      &
-               *sinc_vec(1)
+               *pump_profile(1)*sinc_vec(1)
  phase_mismatch = calc_phase_mismatch(omega_pump,signal_kz(1),idler_kz(1))
  !assign the whole pack
  wavefunction(:) = d_eff**2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)&
                    *exp( -(beam_waist**2*delta_ksq(:)/2.0) )                   &!seems ok
-                   *exp( -2.0*(omega_sum(:)-omega_pump)**2                     &
-                          /spectral_width**2 )                                 &
-                   *sinc_vec(:)
+                   *pump_profile(:)*sinc_vec(:)
  contains
  real function calc_phase_mismatch(pump_omega, signal_kz, idler_kz )
  real :: pump_omega, signal_kz, idler_kz
