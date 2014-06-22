@@ -39,7 +39,7 @@ implicit none
  end function
  real function omega(k_len)
  real :: k_len, y_left, y_right, lambda_left, lambda_right
- real :: m, b, lambda_save, 	lambda_new
+ real :: m, b, lambda_save, lambda_new, y_new
  integer i
  lambda_left  = low_wavelength_limit
  lambda_right = high_wavelength_limit
@@ -50,15 +50,17 @@ implicit none
   m = (y_right-y_left)/(lambda_right-lambda_left)
   b = y_left-(m*lambda_left)
   lambda_new = -b/m
-  if((ktp_index(lambda_new,temp)*lambda_new/c-k_len).gt.0.0)then
-!  if((2.0*ktp_index(lambda_new,temp)/lambda_new-k_len).gt.0.0)then
+  y_new = ktp_index(lambda_new,temp)*2.0*pi/lambda_new - k_len
+  if(y_new.gt.0.0)then
    lambda_save  = lambda_left
    lambda_left  = lambda_new
   else
    lambda_save  = lambda_right
    lambda_right = lambda_new
+   lambda_left  = lambda_right-0.1*abs(lambda_save-lambda_right)
   endif
   if(abs(lambda_save-lambda_new)/lambda_new.lt.10*lambda_right*epsilon(k_len))exit
+  if(lambda_left.eq.lambda_right)exit
  end do
  omega=2.0*pi*c/lambda_new
  end function omega
