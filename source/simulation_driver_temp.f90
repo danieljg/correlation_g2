@@ -14,7 +14,7 @@ module vars_and_funcs
    low_wvln_idler         = 805.0e-9,                                          &
    high_wvln_idler        = 820.0e-9,                                          &
    beam_waist             = 50.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
-   spectral_width_nm      = 0.035e-9,                  &!!!!GET THESE NUMBERS RIGHT
+   spectral_width_nm      = 0.025e-9,                  &!!!!GET THESE NUMBERS RIGHT
    crystal_length         = 0.005,                                             &
    d_eff                  = 1.0,                       &!!!!GET THESE NUMBERS RIGHT
    pi                     = 4.0*atan(1.0),                                     &
