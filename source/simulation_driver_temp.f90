@@ -1,6 +1,6 @@
 module vars_and_funcs
  integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 20
+                       repetitions = 50
  real,    parameter ::                                                         &
    min_temp               = 40.0,                                              &
    max_temp               = 65.0,                                              &
@@ -9,8 +9,10 @@ module vars_and_funcs
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
    pump_wavelength        = 406.118e-9,                                        &
-   low_wavelength_limit   = 805.0e-9,                                          &
-   high_wavelength_limit  = 820.0e-9,                                          &
+   low_wvln_signal        = 805.0e-9,                                          &
+   high_wvln_signal       = 820.0e-9,                                          &
+   low_wvln_idler         = 805.0e-9,                                          &
+   high_wvln_idler        = 820.0e-9,                                          &
    beam_waist             = 50.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
    spectral_width_nm      = 0.035e-9,                  &!!!!GET THESE NUMBERS RIGHT
    crystal_length         = 0.005,                                             &
@@ -76,8 +78,8 @@ use vsl_stream
 implicit none
  integer, parameter ::                                                         &
    number_of_temps = 1+ceiling(abs(max_temp-min_temp)/temp_step)
- real :: k_a, k_b, signal_gamma, idler_gamma,                                  &
-         signal_aperture_angle, idler_aperture_angle
+ real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler,                         &
+         signal_gamma, idler_gamma, signal_aperture_angle, idler_aperture_angle
  real :: signal_aperture, idler_aperture,  k_degen
  real, dimension(nn) :: signal_k, signal_polar, signal_azimuth,                &
                         idler_k,  idler_polar,  idler_azimuth,                 &
@@ -105,11 +107,13 @@ implicit none
 
  call set_variables()
 
- call determine_k_limits_and_hypervolume(k_a, k_b, k_hypervolume(i), k_degen)
+ call determine_k_limits_and_hypervolume(k_a_signal, k_b_signal,               &
+                                         k_a_idler,  k_b_idler,                &
+                                         k_hypervolume(i), k_degen)
 
- call generate_random_photons(k_a, k_b, signal_aperture_angle,                 &
+ call generate_random_photons(k_a_signal, k_b_signal, signal_aperture_angle,   &
                           signal_k, signal_polar, signal_azimuth, nn, k_degen)
- call generate_random_photons(k_a, k_b, idler_aperture_angle,                  &
+ call generate_random_photons(k_a_idler, k_b_idler, idler_aperture_angle,      &
                           idler_k,  idler_polar,  idler_azimuth,  nn, k_degen)
 
  call rotate_to_aperture_angle(signal_gamma,signal_k,signal_polar,signal_azimuth,&
@@ -119,7 +123,8 @@ implicit none
 
  call evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,         &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
-                            wavefunction, temp, k_a, k_b,                      &
+                            wavefunction, temp, k_a_signal, k_b_signal,        &
+                            k_a_idler, k_b_idler,                              &
                             point_value(i), phase_mismatch(i))!!!
 
  average(i) = average(i)+sum(wavefunction)/nn; wavefunction(:)=0.
@@ -188,18 +193,28 @@ write(*,*)'poling_period',poling_period
                       /ktp_index(pump_wavelength*2.0,temp))
  end subroutine set_variables
 
- subroutine determine_k_limits_and_hypervolume(k_low,k_high,hypervolume,k_degen)
+ subroutine determine_k_limits_and_hypervolume(k_low_signal, k_high_signal,    &
+                                               k_low_idler,  k_high_idler,     &
+                                               hypervolume,  k_degen)
  implicit none
- real, intent(out) :: k_low, k_high, hypervolume, k_degen
+ real, intent(out) :: k_low_signal, k_high_signal,                             &
+                      k_low_idler, k_high_idler, hypervolume, k_degen
   k_degen = 2.0*pi*ktp_index(2.0*pump_wavelength,temp)/(2.0*pump_wavelength)
-  k_low  = min( &
-           ktp_index(high_wavelength_limit,temp)*2.0*pi/high_wavelength_limit,&
-           ktp_index(low_wavelength_limit,temp)*2.0*pi/low_wavelength_limit)
-  k_high = max( &
-           ktp_index(high_wavelength_limit,temp)*2.0*pi/high_wavelength_limit,&
-           ktp_index(low_wavelength_limit,temp)*2.0*pi/low_wavelength_limit)
- hypervolume = (2.0*pi/3.0)**2*(k_b**3-k_a**3)**2                              &
-             * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
+  k_low_signal  = min( &
+           ktp_index(high_wvln_signal,temp)*2.0*pi/high_wvln_signal,&
+           ktp_index(low_wvln_signal,temp)*2.0*pi/low_wvln_signal)
+  k_high_signal = max( &
+           ktp_index(high_wvln_signal,temp)*2.0*pi/high_wvln_signal,&
+           ktp_index(low_wvln_signal,temp)*2.0*pi/low_wvln_signal)
+  k_low_idler   = min( &
+           ktp_index(high_wvln_idler,temp)*2.0*pi/high_wvln_idler,&
+           ktp_index(low_wvln_idler,temp)*2.0*pi/low_wvln_idler)
+  k_high_idler  = max( &
+           ktp_index(high_wvln_idler,temp)*2.0*pi/high_wvln_idler,&
+           ktp_index(low_wvln_idler,temp)*2.0*pi/low_wvln_idler)
+  hypervolume = (2.0*pi/3.0)**2*(k_b_signal**3-k_a_signal**3)                  &
+              * (k_b_idler**3-k_a_idler**3)                                    &
+              * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
  end subroutine determine_k_limits_and_hypervolume
 
  subroutine write_data_to_file(min_temp, temp_step, number_of_temps,           &
