@@ -1,5 +1,5 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e7,                                               &
+ integer, parameter :: nn = 1e5,                                               &
                        repetitions = 1
  real,    parameter ::                                                         &
    min_temp               = 40.0,                                              &
