@@ -1,14 +1,13 @@
 #!/bin/bash
 echo compiling
 make coherence_temp
-signal_apertures=(1 0.1 0.1 0.1 5)
-idler_apertures=( 1 0.1 3   5   5)
+signal_apertures=(1  1  1   0.1 0.1 0.1 5  5  5   5)
+idler_apertures=( 5  10 15  5   10  15  5  10 15  25)
 echo running
-for ((k=0;k<=3;k++))
+for ((k=0;k<10;k++))
 do
  time ./coherence_temp ${signal_apertures[$k]} ${idler_apertures[$k]} 2.4 2.4
- gnuplot plot_temp.p
- cp coherence_temp.eps graphs/temp/signal_${signal_apertures[$k]}_idler_${idler_apertures[$k]}.eps
- cp coherence_phase.eps graphs/temp/phase_signal_${signal_apertures[$k]}_idler_${idler_apertures[$k]}.eps
- cp coherence.dat archive/temp/signal_${signal_apertures[$k]}_idler_${idler_apertures[$k]}.dat
+ cp coherence.dat singles_convergence/temp/signal_${signal_apertures[$k]}_idler_${idler_apertures[$k]}.dat
 done
+gnuplot plot_temp.p
+

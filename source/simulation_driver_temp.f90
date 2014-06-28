@@ -1,20 +1,20 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 50
+ integer, parameter :: nn = 1e5,                                               &
+                       repetitions = 1
  real,    parameter ::                                                         &
    min_temp               = 40.0,                                              &
    max_temp               = 65.0,                                              &
-   temp_step              = 0.25,                                              &
+   temp_step              = 0.5,                                               &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
    pump_wavelength        = 406.118e-9,                                        &
    low_wvln_signal        = 805.0e-9,                                          &
    high_wvln_signal       = 820.0e-9,                                          &
-   low_wvln_idler         = 805.0e-9,                                          &
-   high_wvln_idler        = 820.0e-9,                                          &
+   low_wvln_idler         = 750.0e-9,                                          &
+   high_wvln_idler        = 960.0e-9,                                          &
    beam_waist             = 50.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
-   spectral_width_nm      = 0.015e-9,                  &!!!!GET THESE NUMBERS RIGHT
+   spectral_width_nm      = 0.035e-9,                  &!!!!GET THESE NUMBERS RIGHT
    crystal_length         = 0.005,                                             &
    d_eff                  = 1.0,                       &!!!!GET THESE NUMBERS RIGHT
    pi                     = 4.0*atan(1.0),                                     &
@@ -81,7 +81,7 @@ implicit none
  real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler,                         &
          signal_gamma, idler_gamma, signal_aperture_angle, idler_aperture_angle
  real :: signal_aperture, idler_aperture,  k_degen
- real, dimension(nn) :: signal_k, signal_polar, signal_azimuth,                &
+ real, dimension(nn+1) :: signal_k, signal_polar, signal_azimuth,              &
                         idler_k,  idler_polar,  idler_azimuth,                 &
                         signal_kx, signal_ky, signal_kz,                       &
                         idler_kx,  idler_ky,  idler_kz,                        &
@@ -117,9 +117,9 @@ implicit none
                           idler_k,  idler_polar,  idler_azimuth,  nn, k_degen)
 
  call rotate_to_aperture_angle(signal_gamma,signal_k,signal_polar,signal_azimuth,&
-                  signal_kx,signal_ky,signal_kz,nn)
+                  signal_kx,signal_ky,signal_kz,nn+1)
  call rotate_to_aperture_angle(idler_gamma, idler_k, idler_polar, idler_azimuth, &
-                  idler_kx, idler_ky, idler_kz, nn)
+                  idler_kx, idler_ky, idler_kz, nn+1)
 
  call evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,         &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
@@ -127,7 +127,7 @@ implicit none
                             k_a_idler, k_b_idler,                              &
                             point_value(i), phase_mismatch(i))!!!
 
- average(i) = average(i)+sum(wavefunction)/nn; wavefunction(:)=0.
+ average(i) = average(i)+sum(wavefunction(1:nn))/nn; wavefunction(:)=0.
 
  end do
 
@@ -148,11 +148,11 @@ contains
   if(command_argument_count().eq.0)then
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
    write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] external_signal_angle[degrees] {idler_angle[mm]}'
-   write(*,*)'[defaults]./coherence 1.0 1.0 2.3 2.3'
+   write(*,*)'[defaults]./coherence 1.0 1.0 2.4 2.4'
    signal_aperture = 0.001
    idler_aperture  = 0.001
-   signal_angle = 2.3
-   idler_angle  = 2.3
+   signal_angle = 2.4
+   idler_angle  = 2.4
   elseif(command_argument_count().eq.3)then
    call get_command_argument(1,value)
    read(value,*) signal_aperture; signal_aperture=signal_aperture/1e3
