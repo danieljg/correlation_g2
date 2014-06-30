@@ -4,7 +4,7 @@ make coherence_temp
 signal_apertures=(1 0.1 0.1 0.1 5)
 idler_apertures=( 1 0.1 3   5   5)
 echo running
-for ((k=0;k<=3;k++))
+for ((k=0;k<5;k++))
 do
  time ./coherence_temp ${signal_apertures[$k]} ${idler_apertures[$k]} 2.4 2.4
  gnuplot plot_temp.p

@@ -4,7 +4,7 @@ make coherence_angle
 signal_apertures=(1 0.1 0.1 3 5)
 idler_apertures=(1  0.1 5   3 5)
 echo running
-for ((k=0;k<=3;k++))
+for ((k=0;k<5;k++))
 do
  time ./coherence_angle ${signal_apertures[$k]} ${idler_apertures[$k]}
  gnuplot plot_angle.p
