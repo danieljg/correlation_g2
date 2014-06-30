@@ -1,6 +1,6 @@
 module vars_and_funcs
  integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 50
+                       repetitions = 1
  real,    parameter ::                                                         &
    working_temp           = 51.5,                                              &
    idler_angle            = 2.3,                                               &
@@ -11,6 +11,7 @@ module vars_and_funcs
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
    pump_wavelength        = 406.118e-9,                                        &
+   pump_wavelength_shift  = 0.15e-9,                                            &
    low_wvln_signal        = 805.0e-9,                                          &
    high_wvln_signal       = 820.0e-9,                                          &
    low_wvln_idler         = 805.0e-9,                                          &
@@ -22,7 +23,8 @@ module vars_and_funcs
    pi                     = 4.0*atan(1.0),                                     &
    c                      = 3.0e8
  real, parameter :: omega_pump     = 2.0*pi*c/pump_wavelength,                 &
-                    spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
+            omega_shift    = 2.0*pi*c/(pump_wavelength+pump_wavelength_shift), &
+            spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
  real :: poling_period
  contains
 real function temp_factor(temp)

@@ -18,7 +18,10 @@ implicit none
   omega_sum(i)    = omega(signal_k(i))+omega(idler_k(i))
   sinc_vec(i)     = calc_phase_mismatch(omega_sum(i),signal_kz(i),idler_kz(i))
   sinc_vec(i)     = (sinc(sinc_vec(i)))**2
-  pump_profile(i) = exp( -2.0*(omega_sum(i)-omega_pump)**2/spectral_width**2 )
+  pump_profile(i) = (exp( -2.0*(omega_sum(i)-omega_pump)**2                    &
+                              / spectral_width**2 )                            &
+                  +  exp( -2.0*(omega_sum(i)-omega_shift)**2        &
+                              / spectral_width**2) )
  end do
  !asign point-value and phase-mismatch
  point_value = d_eff*2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)     &
