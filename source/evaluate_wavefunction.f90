@@ -21,13 +21,13 @@ implicit none
   pump_profile(i) = exp( -2.0*(omega_sum(i)-omega_pump)**2/spectral_width**2 )
  end do
  !asign point-value and phase-mismatch
- point_value = d_eff*2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)     &
-               *exp( - (beam_waist**2*delta_ksq(1)/2.0) )                      &
+ point_value = &!d_eff*2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)*   &
+               exp( - (beam_waist**2*delta_ksq(1)/2.0) )                       &
                *pump_profile(1)*sinc_vec(1)
  phase_mismatch = calc_phase_mismatch(omega_pump,signal_kz(1),idler_kz(1))
  !assign the whole pack
- wavefunction(:) = d_eff**2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)&
-                   *exp( -(beam_waist**2*delta_ksq(:)/2.0) )                   &!seems ok
+ wavefunction(:) = &!d_eff**2*sqrt(pump_power/2.0)*beam_waist/(pi*spectral_width)*&
+                   exp( -(beam_waist**2*delta_ksq(:)/2.0) )                    &!seems ok
                    *pump_profile(:)*sinc_vec(:)
  contains
  real function calc_phase_mismatch(pump_omega, signal_kz, idler_kz )
