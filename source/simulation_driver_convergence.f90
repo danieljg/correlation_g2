@@ -1,18 +1,14 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e5,                                               &
-                       repetitions = 1
+ integer, parameter :: nn = 1e6,                                               &
+                       repetitions = 200
  real,    parameter ::                                                         &
-   min_temp               = 40.0,                                              &
-   max_temp               = 65.0,                                              &
-   temp_step              = 0.5,                                               &
+   work_temp              = 51.5,                                              &
    axial_pm_temp          = 65.0,                                              &
    crystal_dist           = 0.5,                                               &
    pump_power             = 0.030,                                             &
    pump_wavelength        = 406.118e-9,                                        &
    low_wvln_signal        = 805.0e-9,                                          &
    high_wvln_signal       = 820.0e-9,                                          &
-   low_wvln_idler         = 750.0e-9,                                          &
-   high_wvln_idler        = 960.0e-9,                                          &
    beam_waist             = 50.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
    spectral_width_nm      = 0.035e-9,                  &!!!!GET THESE NUMBERS RIGHT
    crystal_length         = 0.005,                                             &
@@ -21,7 +17,7 @@ module vars_and_funcs
    c                      = 3.0e8
  real, parameter :: omega_pump     = 2.0*pi*c/pump_wavelength,                 &
                     spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
- real :: poling_period
+ real :: poling_period, low_wvln_idler, high_wvln_idler
  contains
 real function temp_factor(temp)
 real :: temp
@@ -72,15 +68,13 @@ end function
 end module vars_and_funcs
 
 
-program pair_detection_simulator_temp_dependence
+program pair_detection_simulator_convergence_test
 use vars_and_funcs
 use vsl_stream
 implicit none
- integer, parameter ::                                                         &
-   number_of_temps = 1+ceiling(abs(max_temp-min_temp)/temp_step)
- real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler,                         &
+ real, parameter :: number_of_temps = 1
+ real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler, k_degen,                 &
          signal_gamma, idler_gamma, signal_aperture_angle, idler_aperture_angle
- real :: signal_aperture, idler_aperture,  k_degen
  real, dimension(nn+1) :: signal_k, signal_polar, signal_azimuth,              &
                         idler_k,  idler_polar,  idler_azimuth,                 &
                         signal_kx, signal_ky, signal_kz,                       &
@@ -90,16 +84,13 @@ implicit none
                                      point_value, phase_mismatch
 
  integer(kind=4) :: i = 1, j = 1
- real    :: temp = min_temp, signal_angle, idler_angle
+ real    :: temp = work_temp, idler_bw_wvln,                                   &
+            signal_angle, signal_aperture, idler_angle, idler_aperture
 
  call read_parameters()
  call initialize_stream()
 
  average(:)=0.0
-
- do i = 1, number_of_temps
-
- write(*,*) 'temp ', i, ' of ',number_of_temps
 
  do j = 1, repetitions
 
@@ -132,12 +123,9 @@ implicit none
  end do
 
  average(i) = average(i)/repetitions
- temp = min_temp+(i)*temp_step
 
- end do
-
- call write_data_to_file(min_temp, temp_step, number_of_temps,                 &
-                         average , phase_mismatch, k_hypervolume, point_value)
+ call write_data_to_file(temp, number_of_temps, average , phase_mismatch,      &
+                         k_hypervolume, point_value)
  call deinitialize_stream()
 
 contains
@@ -181,6 +169,8 @@ write(*,*)'poling_period',poling_period
 
  subroutine set_variables()
  implicit none
+  low_wvln_idler  = 2.0*pump_wavelength-0.5*bw_wvln_idler
+  high_wvln_idler = 2.0*pump_wavelength+0.5*bw_wvln_idler
   signal_aperture_angle = &
    tan(0.5*signal_aperture*cos(signal_angle*pi/180.0)/crystal_dist)            &
     /ktp_index(pump_wavelength*2.0,temp)
@@ -217,22 +207,18 @@ write(*,*)'poling_period',poling_period
               * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
  end subroutine determine_k_limits_and_hypervolume
 
- subroutine write_data_to_file(min_temp, temp_step, number_of_temps,           &
+ subroutine write_data_to_file(bw_wvln_idler, temp,            &
                             average, phase_mismatch, k_hypervolume, point_value)
  implicit none
  integer, intent(in) :: number_of_temps
- real, intent(in)    :: min_temp, temp_step,                                   &
-                   average(number_of_temps), phase_mismatch(number_of_temps),  &
-                   k_hypervolume(number_of_temps), point_value(number_of_temps)
+ real, intent(in)    :: temp, average, phase_mismatch, k_hypervolume, point_value
  integer i
  character(80) fmt_list
  open(unit=10,file='coherence.dat')
- write(10,*) "#temperature 2nd_order_coherence phase_mismatch[pi] point_value"
+ write(10,*) "#idler_bw(nm) temperature 2nd_order_coherence phase_mismatch[pi] point_value"
  fmt_list = '(E12.4, E12.4, E12.4, E12.4)'
- do i=1,number_of_temps
  write(10,fmt_list) min_temp+(i-1)*temp_step, average(i)*k_hypervolume(i), &
                     phase_mismatch(i)/pi, point_value(i)
- end do
  close(10)
  end subroutine
-end program pair_detection_simulator_temp_dependence
+end program pair_detection_simulator_convergence_test
