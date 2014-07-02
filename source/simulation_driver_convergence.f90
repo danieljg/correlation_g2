@@ -1,6 +1,6 @@
 module vars_and_funcs
  integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 200
+                       repetitions = 50
  real,    parameter ::                                                         &
    work_temp              = 51.5,                                              &
    axial_pm_temp          = 65.0,                                              &
@@ -82,9 +82,8 @@ implicit none
                         wavefunction
  real, dimension(number_of_temps) :: k_hypervolume, average,                   &
                                      point_value, phase_mismatch
-
  integer(kind=4) :: i = 1, j = 1
- real    :: temp = work_temp, idler_bw_wvln,                                   &
+ real    :: temp, idler_bw_wvln,                                   &
             signal_angle, signal_aperture, idler_angle, idler_aperture
 
  call read_parameters()
@@ -94,7 +93,7 @@ implicit none
 
  do j = 1, repetitions
 
- write(*,*) 'repetition ', j, ' of ',repetitions
+ !write(*,*) 'repetition ', j, ' of ',repetitions
 
  call set_variables()
 
@@ -124,8 +123,8 @@ implicit none
 
  average(i) = average(i)/repetitions
 
- call write_data_to_file(temp, number_of_temps, average , phase_mismatch,      &
-                         k_hypervolume, point_value)
+ call write_data_to_file( idler_aperture, idler_bw_wvln, average(i),           &
+                          phase_mismatch(i), k_hypervolume(i), point_value(i) )
  call deinitialize_stream()
 
 contains
@@ -135,20 +134,15 @@ contains
  character(len=30) :: value
   if(command_argument_count().eq.0)then
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
-   write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] external_signal_angle[degrees] {idler_angle[mm]}'
-   write(*,*)'[defaults]./coherence 1.0 1.0 2.4 2.4'
+   write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] external_signal_angle[degrees] idler_angle[mm] idler_bw[nm] temp[C]'
+   write(*,*)'[defaults]./coherence 1.0 1.0 2.4 2.4 20 51.5'
    signal_aperture = 0.001
    idler_aperture  = 0.001
-   signal_angle = 2.4
-   idler_angle  = 2.4
-  elseif(command_argument_count().eq.3)then
-   call get_command_argument(1,value)
-   read(value,*) signal_aperture; signal_aperture=signal_aperture/1e3
-   call get_command_argument(2,value)
-   read(value,*) idler_aperture; idler_aperture=idler_aperture/1e3
-   call get_command_argument(3,value)
-   read(value,*) signal_angle;   idler_angle = signal_angle
-  elseif(command_argument_count().eq.4)then
+   signal_angle  = 2.4
+   idler_angle   = 2.4
+   idler_bw_wvln = 20.0e-9
+   temp = work_temp
+  elseif(command_argument_count().eq.6)then
    call get_command_argument(1,value)
    read(value,*) signal_aperture; signal_aperture=signal_aperture/1e3
    call get_command_argument(2,value)
@@ -157,6 +151,10 @@ contains
    read(value,*) signal_angle;
    call get_command_argument(4,value)
    read(value,*) idler_angle
+   call get_command_argument(5,value)
+   read(value,*) idler_bw_wvln; idler_bw_wvln=idler_bw_wvln/1e9
+   call get_command_argument(6,value)
+   read(value,*) temp
   else
    write(*,*) 'wrong number of arguments, try no arguments to see some instructions'
    stop
@@ -169,8 +167,8 @@ write(*,*)'poling_period',poling_period
 
  subroutine set_variables()
  implicit none
-  low_wvln_idler  = 2.0*pump_wavelength-0.5*bw_wvln_idler
-  high_wvln_idler = 2.0*pump_wavelength+0.5*bw_wvln_idler
+  low_wvln_idler  = 2.0*pump_wavelength-0.5*idler_bw_wvln
+  high_wvln_idler = 2.0*pump_wavelength+0.5*idler_bw_wvln
   signal_aperture_angle = &
    tan(0.5*signal_aperture*cos(signal_angle*pi/180.0)/crystal_dist)            &
     /ktp_index(pump_wavelength*2.0,temp)
@@ -207,18 +205,14 @@ write(*,*)'poling_period',poling_period
               * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
  end subroutine determine_k_limits_and_hypervolume
 
- subroutine write_data_to_file(bw_wvln_idler, temp,            &
-                            average, phase_mismatch, k_hypervolume, point_value)
+ subroutine write_data_to_file(idler_aperture, idler_bw, average, phase_mismatch, k_hypervolume, point_value)
  implicit none
- integer, intent(in) :: number_of_temps
- real, intent(in)    :: temp, average, phase_mismatch, k_hypervolume, point_value
- integer i
+ real, intent(in)    :: idler_aperture, idler_bw, average, phase_mismatch, k_hypervolume, point_value
  character(80) fmt_list
  open(unit=10,file='coherence.dat')
- write(10,*) "#idler_bw(nm) temperature 2nd_order_coherence phase_mismatch[pi] point_value"
- fmt_list = '(E12.4, E12.4, E12.4, E12.4)'
- write(10,fmt_list) min_temp+(i-1)*temp_step, average(i)*k_hypervolume(i), &
-                    phase_mismatch(i)/pi, point_value(i)
+ write(10,*) "#idler_aprtr[mm] idlr_bw[nm] 2nd_order_coherence phase_msmtch[pi] pnt_value"
+ fmt_list = '(E12.4, E12.4, E12.4, E12.4, E12.4)'
+ write(10,fmt_list) idler_aperture*1e3, idler_bw*1e9, average*k_hypervolume, phase_mismatch/pi, point_value
  close(10)
  end subroutine
 end program pair_detection_simulator_convergence_test

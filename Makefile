@@ -26,7 +26,7 @@ build: coherence_convergence
 build_debug: rangen_debug
 
 coherence_convergence: source/simulation_driver_convergence.f90 $(COHERENCE_DEPENDENCIES)
-	$(FC) $(FCFLAGS) source/simulation_driver_convergence.f90 $(COHERENCE_DEPENDENCIES) -o coherence_temp -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
+	$(FC) $(FCFLAGS) source/simulation_driver_convergence.f90 $(COHERENCE_DEPENDENCIES) -o coherence_convergence -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
 
 coherence.o: source/simulation_driver_convergence.f90
 	$(FC) $(FCFLAGS) source/simulation_driver_convergence.f90 -c -r8 -prec-div -prec-sqrt -fltconsistency -O0 -xHost $(MKL_VSL_FLAGS)
