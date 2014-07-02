@@ -17,7 +17,7 @@ set xrange [xmin:xmax]
 # working temp
 #temp=51.5
 
-for [k in " 0.1 1 3 5"] do 
+do for [k in " 0.1 1 3 5"]{ 
 set output 'singles/convergence/signal_ap_'.k.'.eps'
 set title "Convergence test for idler aperture diameters and idler filter bandwidths\n T=51.5C, external signal and idler angle=2.4degrees, signal aperture =".k."mm"
 plot for [l in "20 50 100 200] './singles_convergence/'.l.'nm/signal_ap_'.k.'.dat' u 1:3  w lp ti 'idler bandwidth = '.l.'nm'
