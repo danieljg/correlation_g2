@@ -1,7 +1,10 @@
 #!/bin/bash
 
 echo compiling
+cd build/
 make coherence_convergence
+mv coherence_convergence ../
+cd ..
 
 # apertures to try
 signal_ap=(0.1 1 3 5)
@@ -35,4 +38,5 @@ done
 done
 
 gnuplot plot_convergence.p
+rm coherence.dat
 
