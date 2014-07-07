@@ -16,4 +16,4 @@ set xlabel 'Phase-mismatch [PI]'
 set xrange [-5:5]
 set xtics 1
 set output 'coherence_phase.eps'
-plot 'coherence.dat' u 3:2 w lp pt 7 ps 0.5 lc 3
+plot 'coherence.dat' u 2:3 w lp pt 7 ps 0.5 lc 3

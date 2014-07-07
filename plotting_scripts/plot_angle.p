@@ -10,4 +10,9 @@ set xrange [xmin:xmax]
 
 set output 'coherence_angle.eps'
 set title "Second order coherence function"
-plot 'coherence.dat' w lp pt 7 ps 0.5 lc 3
+plot 'coherence.dat' u 1:3 w lp pt 7 ps 0.5 lc 3
+
+set output 'coherence_norm.eps'
+set title "Second order coherence function"
+plot 'coherence.dat' u 1:3 w lp pt 7 ps 0.5 lc 3
+

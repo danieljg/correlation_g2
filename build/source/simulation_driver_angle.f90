@@ -1,28 +1,26 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 50
+ integer, parameter :: nn = 4e6,                                               &
+                       repetitions = 1
  real,    parameter ::                                                         &
-   working_temp           = 51.5,                                              &
-   idler_angle            = 2.3,                                               &
-   min_angle              = 1.5,                                               &
-   max_angle              = 3.0,                                               &
-   angle_step             = 0.025,                                             &
-   axial_pm_temp          = 65.0,                                              &
-   crystal_dist           = 0.5,                                               &
-   pump_power             = 0.030,                                             &
-   pump_wavelength        = 406.118e-9,                                        &
-   low_wvln_signal        = 805.0e-9,                                          &
-   high_wvln_signal       = 820.0e-9,                                          &
-   low_wvln_idler         = 805.0e-9,                                          &
-   high_wvln_idler        = 820.0e-9,                                          &
-   beam_waist             = 50.0e-6,                   &!!!!GET THESE NUMBERS RIGHT
-   spectral_width_nm      = 0.015e-9,                  &!!!!GET THESE NUMBERS RIGHT
-   crystal_length         = 0.005,                                             &
-   d_eff                  = 1.0,                       &!!!!GET THESE NUMBERS RIGHT
-   pi                     = 4.0*atan(1.0),                                     &
-   c                      = 3.0e8
+   min_angle         = 2.0, max_angle = 2.8, angle_step = 0.1,                 &
+   axial_pm_temp     = 65.0,                                                   &
+   crystal_dist      = 0.5,                                                    &
+   pump_power        = 0.030,                                                  &
+   pump_wavelength   = 406.118e-9,                                             &
+   low_wvln_signal   = 805.0e-9,                                               &
+   high_wvln_signal  = 820.0e-9,                                               &
+   low_wvln_idler    = 805.0e-9,                                               &
+   high_wvln_idler   = 820.0e-9,                                               &
+   beam_waist        = 70.0e-6,                   &!!!!GOT IT RIGHT
+   spectral_width_nm = 0.042e-9,                  &!!!!GOT IT RIGHT
+   crystal_length    = 0.005,                                                  &
+   d_eff             = 1.0e-12,                   &!!!!GET THESE NUMBERS RIGHT
+   pi                = 4.0*atan(1.0),                                          &
+   c                 = 3.0e8
  real, parameter :: omega_pump     = 2.0*pi*c/pump_wavelength,                 &
                     spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
+! convergence parameters
+ real, parameter :: singles_aperture = 12.0e-3 , singles_bw = 100.0e-9
  real :: poling_period
  contains
 real function temp_factor(temp)
@@ -81,18 +79,21 @@ implicit none
  integer, parameter ::                                                         &
    number_of_angles = 1+ceiling(abs(max_angle-min_angle)/angle_step)
  real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler,                         &
-         signal_gamma, idler_gamma, signal_aperture_angle, idler_aperture_angle
- real :: signal_aperture, idler_aperture, k_degen
- real, dimension(nn) :: signal_k, signal_polar, signal_azimuth,                &
-                        idler_k,  idler_polar,  idler_azimuth,                 &
-                        signal_kx, signal_ky, signal_kz,                       &
-                        idler_kx,  idler_ky,  idler_kz,                        &
-                        wavefunction
- real, dimension(number_of_angles) :: k_hypervolume, average,                  &
+         k_a_singles, k_b_singles, k_degen, signal_gamma, idler_gamma,         &
+         signal_aperture_angle, idler_aperture_angle
+ real, dimension(nn+1) :: signal_k,   signal_polar,  signal_azimuth,           &
+                          idler_k,    idler_polar,   idler_azimuth,            &
+                          singles_k,  singles_polar, singles_azimuth,          &
+                          signal_kx,  signal_ky,     signal_kz,                &
+                          idler_kx,   idler_ky,      idler_kz,                 &
+                          singles_kx, singles_ky,    singles_kz,               &
+                          wavefunction
+ real, dimension(number_of_angles) :: k_hypervolume, k_hypervolume_singles,    &
+                                     average, average_singles, average_norm,   &
                                      point_value, phase_mismatch
-
  integer(kind=4) :: i = 1, j = 1
- real    :: temp = working_temp, angle = min_angle
+ real :: temp, angle = min_angle, idler_angle, signal_aperture, idler_aperture,&
+         singles_aperture_angle
 
  call read_parameters()
  call initialize_stream()
@@ -105,41 +106,63 @@ implicit none
 
  do j = 1, repetitions
 
- write(*,*) 'repetition ', j, ' of ',repetitions
+! write(*,*) 'repetition ', j, ' of ',repetitions
 
  call set_variables()
 
  call determine_k_limits_and_hypervolume(k_a_signal, k_b_signal,               &
                                          k_a_idler,  k_b_idler,                &
-                                         k_hypervolume(i), k_degen)
+                                         k_a_singles,  k_b_singles,            &
+                                         k_hypervolume(i),                     &
+                                         k_hypervolume_singles(i),             &
+                                         k_degen)
 
+ ! calculate the "singles" for the signal channel
  call generate_random_photons(k_a_signal, k_b_signal, signal_aperture_angle,   &
-                          signal_k, signal_polar, signal_azimuth, nn, k_degen)
- call generate_random_photons(k_a_idler, k_b_idler, idler_aperture_angle,      &
-                          idler_k,  idler_polar,  idler_azimuth,  nn, k_degen)
-
+                         signal_k, signal_polar, signal_azimuth, nn, k_degen)
+ call generate_random_photons(k_a_singles, k_b_singles, singles_aperture_angle,&
+                         singles_k, singles_polar, singles_azimuth, nn, k_degen)
  call rotate_to_aperture_angle(signal_gamma,signal_k,signal_polar,signal_azimuth,&
-                  signal_kx,signal_ky,signal_kz,nn)
+                  signal_kx,signal_ky,signal_kz,nn+1)
+ call rotate_to_aperture_angle(idler_gamma,singles_k,singles_polar,singles_azimuth,&
+                  singles_kx,singles_ky,singles_kz,nn+1)
+ call evaluate_wavefunction(signal_k,  signal_kx,  signal_ky,  signal_kz,      &
+                            singles_k, singles_kx, singles_ky, singles_kz,     &
+                            wavefunction, temp, k_a_signal, k_b_signal,        &
+                            k_a_singles, k_b_singles,                          &
+                            point_value(i), phase_mismatch(i))!!!
+ average_singles(i) = average_singles(i)+sum(wavefunction(1:nn))/nn
+ wavefunction(:)=0.
+ ! calculate the pairs the signal-idler configuration
+ call generate_random_photons(k_a_signal, k_b_signal, signal_aperture_angle,   &
+                         signal_k, signal_polar, signal_azimuth, nn, k_degen)
+ call generate_random_photons(k_a_idler, k_b_idler, idler_aperture_angle,      &
+                         idler_k,  idler_polar,  idler_azimuth,  nn, k_degen)
+ call rotate_to_aperture_angle(signal_gamma,signal_k,signal_polar,signal_azimuth,&
+                  signal_kx,signal_ky,signal_kz,nn+1)
  call rotate_to_aperture_angle(idler_gamma, idler_k, idler_polar, idler_azimuth, &
-                  idler_kx, idler_ky, idler_kz, nn)
-
+                  idler_kx, idler_ky, idler_kz, nn+1)
  call evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,         &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
                             wavefunction, temp, k_a_signal, k_b_signal,        &
                             k_a_idler, k_b_idler,                              &
                             point_value(i), phase_mismatch(i))!!!
-
- average(i) = average(i)+sum(wavefunction)/nn; wavefunction(:)=0.
+ average(i) = average(i)+sum(wavefunction(1:nn))/nn
+ wavefunction(:)=0.
 
  end do
 
  average(i) = average(i)/repetitions
+ average_singles(i)=average_singles(i)/repetitions
+ average_norm(i) = average(i)/average_singles(i)
  angle = min_angle+(i)*angle_step
 
  end do
 
- call write_data_to_file(min_angle, angle_step, number_of_angles,                 &
-                         average , phase_mismatch, k_hypervolume, point_value)
+ call write_data_to_file(min_angle, angle_step, number_of_angles,              &
+                         average , average_singles, average_norm,              &
+                         phase_mismatch, k_hypervolume, k_hypervolume_singles, &
+                         point_value)
  call deinitialize_stream()
 
 contains
@@ -149,15 +172,21 @@ contains
  character(len=30) :: value
   if(command_argument_count().eq.0)then
    write(*,*)'working with defaults, gotta give me 3 or 4 arguments like this:'
-   write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm]'
-   write(*,*)'[defaults]./coherence 1.0 1.0'
+   write(*,*)'./coherence signal_aperture[mm] idler_aperture[mm] idler_angle[deg] temp[celsius]'
+   write(*,*)'[defaults]./coherence 1.0 1.0 2.4 51.5'
    signal_aperture = 0.001
    idler_aperture  = 0.001
-  elseif(command_argument_count().eq.2)then
+   idler_angle     = 2.4
+   temp            = 51.5
+  elseif(command_argument_count().eq.4)then
    call get_command_argument(1,value)
    read(value,*) signal_aperture; signal_aperture=signal_aperture/1e3
    call get_command_argument(2,value)
    read(value,*) idler_aperture; idler_aperture=idler_aperture/1e3
+   call get_command_argument(3,value)
+   read(value,*) idler_angle
+   call get_command_argument(4,value)
+   read(value,*) temp
   else
    write(*,*) 'wrong number of arguments, try no arguments to see some instructions'
    stop
@@ -170,11 +199,14 @@ write(*,*)'poling_period',poling_period
 
  subroutine set_variables()
  implicit none
-  signal_aperture_angle = &
+  signal_aperture_angle  = &
    tan(0.5*signal_aperture*cos(angle*pi/180.0)/crystal_dist)                   &
     /ktp_index(pump_wavelength*2.0,temp)
-  idler_aperture_angle  = &
+  idler_aperture_angle   = &
    tan(0.5*idler_aperture*cos(idler_angle*pi/180.0)/crystal_dist)              &
+    /ktp_index(pump_wavelength*2.0,temp)
+  singles_aperture_angle = &
+   tan(0.5*singles_aperture*cos(idler_angle*pi/180.0)/crystal_dist)            &
     /ktp_index(pump_wavelength*2.0,temp)
   signal_gamma  = asin(sin(angle*(pi/180.0))                                   &
                       /ktp_index(pump_wavelength*2.0,temp))
@@ -184,43 +216,71 @@ write(*,*)'poling_period',poling_period
 
  subroutine determine_k_limits_and_hypervolume(k_low_signal, k_high_signal,    &
                                                k_low_idler,  k_high_idler,     &
-                                               hypervolume,  k_degen)
+                                               k_low_singles,  k_high_singles, &
+                                               hypervolume,                    &
+                                               hypervolume_singles,            &
+                                               k_degen)
  implicit none
- real, intent(out) :: k_low_signal, k_high_signal,                             &
-                      k_low_idler, k_high_idler, hypervolume, k_degen
+ real, intent(out) :: k_low_signal,  k_high_signal,                            &
+                      k_low_idler,   k_high_idler,                             &
+                      k_low_singles, k_high_singles,                           &
+                      hypervolume,   hypervolume_singles,                      &
+                      k_degen
   k_degen = 2.0*pi*ktp_index(2.0*pump_wavelength,temp)/(2.0*pump_wavelength)
-  k_low_signal  = min( &
+  k_low_signal   = min( &
            ktp_index(high_wvln_signal,temp)*2.0*pi/high_wvln_signal,&
            ktp_index(low_wvln_signal,temp)*2.0*pi/low_wvln_signal)
-  k_high_signal = max( &
+  k_high_signal  = max( &
            ktp_index(high_wvln_signal,temp)*2.0*pi/high_wvln_signal,&
            ktp_index(low_wvln_signal,temp)*2.0*pi/low_wvln_signal)
-  k_low_idler   = min( &
+  k_low_idler    = min( &
            ktp_index(high_wvln_idler,temp)*2.0*pi/high_wvln_idler,&
            ktp_index(low_wvln_idler,temp)*2.0*pi/low_wvln_idler)
-  k_high_idler  = max( &
+  k_high_idler   = max( &
            ktp_index(high_wvln_idler,temp)*2.0*pi/high_wvln_idler,&
            ktp_index(low_wvln_idler,temp)*2.0*pi/low_wvln_idler)
+  k_low_singles  = min( &
+           ktp_index(2.0*pump_wavelength+0.5*singles_bw,temp)*2.0*pi/(2.0*pump_wavelength+0.5*singles_bw),&
+           ktp_index(2.0*pump_wavelength-0.5*singles_bw,temp)*2.0*pi/(2.0*pump_wavelength-0.5*singles_bw))
+  k_high_singles = max( &
+           ktp_index(2.0*pump_wavelength+0.5*singles_bw,temp)*2.0*pi/(2.0*pump_wavelength+0.5*singles_bw),&
+           ktp_index(2.0*pump_wavelength-0.5*singles_bw,temp)*2.0*pi/(2.0*pump_wavelength-0.5*singles_bw))
   hypervolume = (2.0*pi/3.0)**2*(k_b_signal**3-k_a_signal**3)                  &
               * (k_b_idler**3-k_a_idler**3)                                    &
               * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
+  hypervolume_singles = (2.0*pi/3.0)**2*(k_b_signal**3-k_a_signal**3)          &
+              * (k_b_singles**3-k_a_singles**3)                                    &
+              * (1.0-cos(signal_aperture_angle))*(1.0-cos(singles_aperture_angle))
+
  end subroutine determine_k_limits_and_hypervolume
 
- subroutine write_data_to_file(min_angle, angle_step, number_of_angles,        &
-                            average, phase_mismatch, k_hypervolume, point_value)
+
+ subroutine write_data_to_file(min_value, value_step, number_of_values,        &
+                        average, average_singles, average_norm,                &
+                        phase_mismatch, k_hypervolume, k_hypervolume_singles,  &
+                        point_value)
  implicit none
- integer, intent(in) :: number_of_angles
- real, intent(in)    :: min_angle, angle_step,                                 &
-                   average(number_of_angles), phase_mismatch(number_of_angles),&
-                   k_hypervolume(number_of_angles), point_value(number_of_angles)
+ integer, intent(in) :: number_of_values
+ real, intent(in)    :: min_value, value_step,                                 &
+                   average(number_of_values),                                  &
+                   average_singles(number_of_values),                          &
+                   average_norm(number_of_values),                             &
+                   phase_mismatch(number_of_values),                           &
+                   k_hypervolume(number_of_values),                            &
+                   k_hypervolume_singles(number_of_values),                    &
+                   point_value(number_of_values)
  integer i
  character(80) fmt_list
  open(unit=10,file='coherence.dat')
- write(10,*) "#external_angle[degrees] 2nd_order_coherence phase_mismatch[pi] point_value"
- fmt_list = '(E12.4, E12.4, E12.4, E12.4)'
- do i=1,number_of_angles
- write(10,fmt_list) min_angle+(i-1)*angle_step, average(i)*k_hypervolume(i),   &
-                    phase_mismatch(i)/pi, point_value(i)
+ write(10,'(120a)') "#external_angle[degrees] phase_mismatch[pi] 2nd_order_coherence singles norm_coherence point_value"
+ fmt_list = '(E12.4, E12.4, E12.4, E12.4, E12.4, E12.4)'
+ do i=1,number_of_values
+ write(10,fmt_list) min_value+(i-1)*value_step,                                &
+                    phase_mismatch(i)/pi,                                      &
+                    average(i)*k_hypervolume(i),                               &
+                    average_singles(i)*k_hypervolume_singles(i),               &
+                    average_norm(i)*k_hypervolume(i)/k_hypervolume_singles(i), &
+                    point_value(i)
  end do
  close(10)
  end subroutine
