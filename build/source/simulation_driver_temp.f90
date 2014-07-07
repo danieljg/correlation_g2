@@ -1,8 +1,8 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e5,                                               &
-                       repetitions = 1
+ integer, parameter :: nn = 1e6,                                               &
+                       repetitions = 100
  real,    parameter ::                                                         &
-   min_temp          = 45.0, max_temp   = 57.0, temp_step      = 0.5,          &
+   min_temp          = 40.0, max_temp   = 65.0, temp_step      = 0.125,        &
    axial_pm_temp     = 65.0,                                                   &
    crystal_dist      = 0.5,                                                    &
    pump_power        = 0.030,                                                  &

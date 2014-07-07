@@ -1,8 +1,8 @@
 module vars_and_funcs
- integer, parameter :: nn = 4e6,                                               &
-                       repetitions = 1
+ integer, parameter :: nn = 1e6,                                               &
+                       repetitions = 100
  real,    parameter ::                                                         &
-   min_angle         = 2.0, max_angle = 2.8, angle_step = 0.1,                 &
+   min_angle         = 1.5, max_angle = 3.0, angle_step = 0.025,               &
    axial_pm_temp     = 65.0,                                                   &
    crystal_dist      = 0.5,                                                    &
    pump_power        = 0.030,                                                  &

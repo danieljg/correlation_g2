@@ -1,6 +1,6 @@
 module vars_and_funcs
  integer, parameter :: nn = 1e6,                                               &
-                       repetitions = 50
+                       repetitions = 100
  real,    parameter ::                                                         &
    axial_pm_temp     = 65.0,                                                   &
    crystal_dist      = 0.5,                                                    &

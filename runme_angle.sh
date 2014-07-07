@@ -13,7 +13,7 @@ mv coherence_angle ../
 cd ..
 
 # apertures to try
-signal_ap=0.3 #(0.3 1.0 5)
+signal_ap=0.3 #(0.3 1.0 3.0 5.0)
 idler_ap=( 0.3 1.0 3.0 5)
 # configuration of detectors
 idler_angle=2.4
@@ -31,6 +31,6 @@ time ./coherence_angle ${signal_ap} ${idler_ap[$k]} ${idler_angle} ${temp}
 cat coherence.dat >> data/angle/signal_${signal_ap}_idler_${idler_ap[$k]}.dat
 done
 
-gnuplot plotting_scripts/plot_angle.p
+#gnuplot plotting_scripts/plot_angle.p
 rm coherence.dat
 

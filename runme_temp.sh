@@ -24,12 +24,12 @@ mkdir data/temp
 rm data/temp/*.dat
 
 echo running
-for((k=0;k<5;k++))
+for((k=0;k<4;k++))
 do
 time ./coherence_temp ${signal_ap} ${idler_ap[$k]} ${signal_angle} ${idler_angle}
 cat coherence.dat >> data/temp/signal_${signal_ap}_idler_${idler_ap[$k]}.dat
 done
 
-gnuplot plotting_scripts/plot_temp.p
+#gnuplot plotting_scripts/plot_temp.p
 rm coherence.dat
 
