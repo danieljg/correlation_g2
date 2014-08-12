@@ -2,7 +2,7 @@ module vars_and_funcs
  integer, parameter :: nn = 1e5,                                               &
                        repetitions = 1
  real,    parameter ::                                                         &
-   min_temp          = 45.0, max_temp   = 57.0, temp_step      = 0.5,          &
+   min_temp          = 40.0, max_temp   = 60.0, temp_step      = 0.5,          &
    axial_pm_temp     = 65.0,                                                   &
    crystal_dist      = 0.5,                                                    &
    pump_power        = 0.030,                                                  &
@@ -11,8 +11,8 @@ module vars_and_funcs
    high_wvln_signal  = 820.0e-9,                                               &
    low_wvln_idler    = 805.0e-9,                                               &
    high_wvln_idler   = 820.0e-9,                                               &
-   beam_waist        = 70.0e-6,                   &!!!!GOT IT RIGHT
-   spectral_width_nm = 0.042e-9,                  &!!!!GOT IT RIGHT
+   beam_waist        = 70.0e-6,                   &!!!!GOT IT RIGHT 70.0e-6
+   spectral_width_nm = 0.042e-9,                  &!!!!GOT IT RIGHT 0.042e-9
    crystal_length    = 0.005,                                                  &
    d_eff             = 1.0e-12,                   &!!!!GET THESE NUMBERS RIGHT
    pi                = 4.0*atan(1.0),                                          &
@@ -83,7 +83,7 @@ implicit none
                         idler_k,  idler_polar,  idler_azimuth,                 &
                         signal_kx, signal_ky, signal_kz,                       &
                         idler_kx,  idler_ky,  idler_kz,                        &
-                        wavefunction
+                        wavefunction, erf_factor
  real, dimension(number_of_temps) :: k_hypervolume, average,                   &
                                      point_value, phase_mismatch
 
@@ -109,18 +109,21 @@ implicit none
                                          k_a_idler,  k_b_idler,                &
                                          k_hypervolume(i), k_degen)
 
- call generate_random_photons(k_a_signal, k_b_signal, signal_aperture_angle,   &
+ call generate_random_photons_uniform(k_a_signal, k_b_signal, signal_aperture_angle,&
                           signal_k, signal_polar, signal_azimuth, nn, k_degen)
- call generate_random_photons(k_a_idler, k_b_idler, idler_aperture_angle,      &
-                          idler_k,  idler_polar,  idler_azimuth,  nn, k_degen)
+ call generate_random_photons_gaussian(k_a_idler, k_b_idler, idler_aperture_angle,  &
+                          idler_k,  idler_polar,  idler_azimuth, erf_factor,        &
+                          nn, k_degen, spectral_width, signal_k, temp)
+
  call rotate_to_aperture_angle(signal_gamma,signal_k,signal_polar,signal_azimuth,&
                   signal_kx,signal_ky,signal_kz,nn+1)
  call rotate_to_aperture_angle(idler_gamma, idler_k, idler_polar, idler_azimuth, &
                   idler_kx, idler_ky, idler_kz, nn+1)
+
  call evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,         &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
                             wavefunction, temp, k_a_signal, k_b_signal,        &
-                            k_a_idler, k_b_idler,                              &
+                            k_a_idler, k_b_idler, erf_factor,                  &
                             point_value(i), phase_mismatch(i))!!!
  average(i) = average(i)+sum(wavefunction(1:nn))/nn; wavefunction(:)=0.
 
