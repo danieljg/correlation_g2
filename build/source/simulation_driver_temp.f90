@@ -1,5 +1,6 @@
 module vars_and_funcs
- integer, parameter :: nn = 1e5,                                               &
+implicit none
+ integer, parameter :: nn = 1e3,                                               &
                        repetitions = 1
  real,    parameter ::                                                         &
    min_temp          = 40.0, max_temp   = 60.0, temp_step      = 0.5,          &
@@ -21,15 +22,49 @@ module vars_and_funcs
                     spectral_width = 2.0*pi*c*spectral_width_nm/pump_wavelength**2
  real :: poling_period
  contains
+ real function omega(k_len,temp)
+ real :: k_len, temp
+ omega = 2.0*pi*c/lambda_of_k(k_len,temp)
+ end function
+ real function lambda_of_k(k_len,temp)
+ real :: k_len, y_left, y_right, lambda_left, lambda_right
+ real :: m, b, lambda_save, lambda_new, y_new, temp
+ integer i
+ lambda_left  = min(low_wvln_signal, low_wvln_idler)
+ lambda_right = max(high_wvln_signal, high_wvln_idler)
+ lambda_save  = lambda_left
+ do i=1,16
+  y_left  = ktp_index(lambda_left,temp)*2.0*pi/lambda_left - k_len
+  y_right = ktp_index(lambda_right,temp)*2.0*pi/lambda_right - k_len
+  m = (y_right-y_left)/(lambda_right-lambda_left)
+  b = y_left-(m*lambda_left)
+  lambda_new = -b/m
+  y_new = ktp_index(lambda_new,temp)*2.0*pi/lambda_new - k_len
+  if(y_new.gt.0.0)then
+   lambda_save  = lambda_left
+   lambda_left  = lambda_new
+  else
+   lambda_save  = lambda_right
+   lambda_right = lambda_new
+   lambda_left  = lambda_right-0.1*abs(lambda_save-lambda_right)
+  endif
+  if(abs(lambda_save-lambda_new)/lambda_new.lt.10*lambda_right*epsilon(k_len))exit
+  if(lambda_left.eq.lambda_right)exit
+ end do
+ lambda_of_k=lambda_new
+ end function lambda_of_k
+
 real function temp_factor(temp)
-real :: temp
+real temp
 real, parameter :: alpha=6.7e-6, beta=11.0e-9
  temp_factor=1.0+alpha*(temp-25.0)+beta*(temp-25)*(temp-25)
 end function
-real function crystal_length_temp()
+real function crystal_length_temp(temp)
+real temp
  crystal_length_temp=crystal_length*temp_factor(temp)
 end function
-real function poling_period_temp()
+real function poling_period_temp(temp)
+real temp
  poling_period_temp=poling_period*temp_factor(temp)
 end function
 
@@ -45,28 +80,6 @@ ktp_index = sqrt( na + nb/(1.0-nc/(lx**2))+ nd/(1.0-ne/(lx**2)) - nf*(lx**2.0))&
       + (a0 + a1/lx + a2/(lx**2) + a3/(lx**3))*(temp-25.0)&
       + (b0 + b1/lx + b2/(lx**2) + b3/(lx**3))*(temp-25.0)**2.0
 end function
- real function ktp_index_new(lambda,temp)
- implicit none
- real :: lambda,ll,n,n1,n2,temp
- real :: A=2.12725, B=1.18431, CC=5.14852e-2, D=0.6603
- real :: E= 100.00506, F=9.68956e-3
-  ll  = lambda*1.0e6
-  n1  = n_one(lambda)
-  n2  = n_two(lambda)
-  n   = sqrt(A + B/(1.0- CC/(ll**2)) + D/(1.0-E/(ll**2)) -F*ll**2)
-  ktp_index_new = n + n1*(temp-25.0) + n2*(temp-25.0)**2.0
- end function
- real function n_one(lambda)
- real ::lambda,ll
-  ll  = lambda*1.0e6
-  n_one = 9.9587e-6 + 9.9228e-6/(ll) - 8.9603e-6/((ll)**2) + 4.1010e-6/((ll)**3)
- end function n_one
- real function n_two(lambda)
- implicit none
- real ::lambda,ll
-  ll  = lambda*1.0e6
-  n_two = -1.1882e-8 + 10.459e-8/(ll) - 9.8136e-8/((ll)**2) + 3.1481e-8/((ll)**3)
- end function n_two
 end module vars_and_funcs
 
 
@@ -76,10 +89,10 @@ use vsl_stream
 implicit none
  integer, parameter ::                                                         &
    number_of_temps = 1+ceiling(abs(max_temp-min_temp)/temp_step)
- real :: k_a_signal, k_b_signal, k_a_idler, k_b_idler,                         &
+ real :: k_low_limit, k_high_limit,                                            &
          signal_gamma, idler_gamma, signal_aperture_angle, idler_aperture_angle
  real :: signal_aperture, idler_aperture,  k_degen
- real, dimension(nn+1) :: signal_k, signal_polar, signal_azimuth,                &
+ real, dimension(nn+1) :: signal_k, signal_polar, signal_azimuth,              &
                         idler_k,  idler_polar,  idler_azimuth,                 &
                         signal_kx, signal_ky, signal_kz,                       &
                         idler_kx,  idler_ky,  idler_kz,                        &
@@ -105,13 +118,12 @@ implicit none
 
  call set_variables()
 
- call determine_k_limits_and_hypervolume(k_a_signal, k_b_signal,               &
-                                         k_a_idler,  k_b_idler,                &
-                                         k_hypervolume(i), k_degen)
+ call determine_k_limits_and_hypervolume(k_low_limit, k_high_limit,            &
+                                         k_hypervolume(i), k_degen, temp)
 
- call generate_random_photons_uniform(k_a_signal, k_b_signal, signal_aperture_angle,&
+ call generate_random_photons_uniform(k_low_limit, k_high_limit, signal_aperture_angle,&
                           signal_k, signal_polar, signal_azimuth, nn, k_degen)
- call generate_random_photons_gaussian(k_a_idler, k_b_idler, idler_aperture_angle,  &
+ call generate_random_photons_gaussian(k_low_limit, k_high_limit, idler_aperture_angle,&
                           idler_k,  idler_polar,  idler_azimuth, erf_factor,        &
                           nn, k_degen, spectral_width, signal_k, temp)
 
@@ -122,8 +134,7 @@ implicit none
 
  call evaluate_wavefunction(signal_k, signal_kx, signal_ky, signal_kz,         &
                             idler_k,  idler_kx,  idler_ky,  idler_kz,          &
-                            wavefunction, temp, k_a_signal, k_b_signal,        &
-                            k_a_idler, k_b_idler, erf_factor,                  &
+                            wavefunction, temp, erf_factor,                    &
                             point_value(i), phase_mismatch(i))!!!
  average(i) = average(i)+sum(wavefunction(1:nn))/nn; wavefunction(:)=0.
 
@@ -191,12 +202,12 @@ write(*,*)'poling_period',poling_period
                       /ktp_index(pump_wavelength*2.0,temp))
  end subroutine set_variables
 
- subroutine determine_k_limits_and_hypervolume(k_low_signal, k_high_signal,    &
-                                               k_low_idler,  k_high_idler,     &
-                                               hypervolume,  k_degen)
+ subroutine determine_k_limits_and_hypervolume(k_low, k_high, hypervolume,     &
+                                               k_degen, temp )
  implicit none
- real, intent(out) :: k_low_signal, k_high_signal,                             &
-                      k_low_idler, k_high_idler, hypervolume, k_degen
+ real, intent(out) :: k_low, k_high, hypervolume, k_degen
+ real, intent(in)  :: temp
+ real :: k_low_signal, k_high_signal, k_low_idler, k_high_idler, omega_new
   k_degen = 2.0*pi*ktp_index(2.0*pump_wavelength,temp)/(2.0*pump_wavelength)
   k_low_signal  = min( &
            ktp_index(high_wvln_signal,temp)*2.0*pi/high_wvln_signal,&
@@ -210,8 +221,16 @@ write(*,*)'poling_period',poling_period
   k_high_idler  = max( &
            ktp_index(high_wvln_idler,temp)*2.0*pi/high_wvln_idler,&
            ktp_index(low_wvln_idler,temp)*2.0*pi/low_wvln_idler)
-  hypervolume = (2.0*pi/3.0)**2*(k_b_signal**3-k_a_signal**3)                  &
-              * (k_b_idler**3-k_a_idler**3)                                    &
+  k_low  = max( k_low_signal,  k_low_idler  )
+  k_high = min( k_high_signal, k_high_idler )
+  if( (omega_pump-omega(k_low,temp)).gt.omega(k_high,temp) )  then
+   omega_new = omega_pump-omega(k_high,temp)
+   k_low     = ktp_index(2.0*pi*c/omega_new,temp)*omega_new/c
+  else
+   omega_new = omega_pump-omega(k_low,temp)
+   k_high    = ktp_index(2.0*pi*c/omega_new,temp)*omega_new/c
+  endif
+  hypervolume = (2.0*pi/3.0)**2*(k_high**3-k_low**3)**2                        &
               * (1.0-cos(signal_aperture_angle))*(1.0-cos(idler_aperture_angle))
  end subroutine determine_k_limits_and_hypervolume
 

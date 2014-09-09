@@ -10,7 +10,7 @@ cd ..
 signal_ap=(0.1 1 3 5)
 idler_ap=( 0.1 0.5 1 2 3 4 5 6 7 8 9 10 12.5 15)
 # bandwidths to try
-idler_bw=( 20 50 100 200 )
+idler_bw=( 20 25 50 100 )
 # configuration of detectors
 signal_angle=2.4
 idler_angle=2.4
